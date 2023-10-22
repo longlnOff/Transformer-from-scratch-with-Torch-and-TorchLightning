@@ -6,7 +6,7 @@ path_git = str(Path(current).resolve().parents[1])
 sys.path.append(path_git)
 from Source.ConfigureInformation import *
 
-class FeedFowardBlock(pl.LightningModule):
+class FeedForwardBlock(pl.LightningModule):
     def __init__(self, d_model: int, d_ff: int, dropout: float):
         super().__init__()
         self.linear_1 = torch.nn.Linear(d_model, d_ff) # W1 and b1

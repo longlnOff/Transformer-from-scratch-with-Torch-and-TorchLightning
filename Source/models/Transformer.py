@@ -5,7 +5,7 @@ current = os.path.dirname(os.path.realpath(__file__))
 path_git = str(Path(current).resolve().parents[1])
 sys.path.append(path_git)
 from Source.ConfigureInformation import *
-from Source.models.FeedFoward import *
+from Source.models.FeedForward import *
 from Source.models.MultiHeadAttention import *
 from Source.models.PositionalEncoding import *
 from Source.models.Encoder import *
@@ -69,9 +69,7 @@ def build_model(src_vocab_size: int,
                 num_head_attention: int,
                 num_encoder_blocks: int,
                 num_decoder_blocks: int,
-                num_feed_forward: int,
-                dropout: float,
-                device: str):
+                dropout: float,):
     
     src_embedding = InputEmbedding(src_vocab_size, d_model)
     tar_embedding = InputEmbedding(tar_vocab_size, d_model)
@@ -83,7 +81,7 @@ def build_model(src_vocab_size: int,
     encoder_bocks = []
     for _ in range(num_encoder_blocks):
         encoder_self_attention = MultiHeadAttention(d_model, num_head_attention, dropout)
-        feed_forward_block = FeedFowardBlock(d_model, d_ff, dropout)
+        feed_forward_block = FeedForwardBlock(d_model, d_ff, dropout)
         encoder_block = EncoderBlock(encoder_self_attention, feed_forward_block, dropout)
         encoder_bocks.append(encoder_block)
 
@@ -92,7 +90,7 @@ def build_model(src_vocab_size: int,
     for _ in range(num_decoder_blocks):
         decoder_self_attention = MultiHeadAttention(d_model, num_head_attention, dropout)
         decoder_encoder_attention = MultiHeadAttention(d_model, num_head_attention, dropout)
-        feed_forward_block = FeedFowardBlock(d_model, d_ff, dropout)
+        feed_forward_block = FeedForwardBlock(d_model, d_ff, dropout)
         decoder_block = DecoderBlock(decoder_self_attention, decoder_encoder_attention, feed_forward_block, dropout)
         decoder_blocks.append(decoder_block)
 
@@ -104,4 +102,17 @@ def build_model(src_vocab_size: int,
     decoder = StackDecoder(torch.nn.ModuleList(decoder_blocks))
 
     # create transformer
-    transformer = Transformer(encoder, decoder, src_embedding, tar_embedding, src_position, tar_position, projection)
+    transformer = Transformer(encoder, 
+                              decoder, 
+                              src_embedding, 
+                              tar_embedding, 
+                              src_position, 
+                              tar_position, 
+                              projection)
+
+    # Xavier initialization for all parameters, which helps faster convergence
+    for parameter in transformer.parameters():
+        if parameter.dim() > 1:
+            torch.nn.init.xavier_uniform_(parameter)
+    
+    return transformer

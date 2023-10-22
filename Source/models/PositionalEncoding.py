@@ -8,7 +8,7 @@ from Source.ConfigureInformation import *
 
 
 class PositionalEncoding(pl.LightningModule):
-    def __init__(self, d_model: int, seq_len: int, dropout: float):
+    def __init__(self, d_model: int, dropout: float, seq_len: int):
         super().__init__()
         self.d_model = d_model
         self.seq_len = seq_len

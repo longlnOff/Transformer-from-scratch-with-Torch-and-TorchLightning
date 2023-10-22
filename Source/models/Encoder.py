@@ -5,7 +5,7 @@ current = os.path.dirname(os.path.realpath(__file__))
 path_git = str(Path(current).resolve().parents[1])
 sys.path.append(path_git)
 from Source.ConfigureInformation import *
-from Source.models.FeedFoward import *
+from Source.models.FeedForward import *
 from Source.models.InputEmbedding import *
 from Source.models.LayerNorm import *
 from Source.models.MultiHeadAttention import *
@@ -15,7 +15,7 @@ from Source.models.ResidualConnection import *
 
 
 class EncoderBlock(pl.LightningModule):
-    def __init__(self, self_attention_block: MultiHeadAttention, feed_forward_block: FeedFowardBlock, dropout: float):
+    def __init__(self, self_attention_block: MultiHeadAttention, feed_forward_block: FeedForwardBlock, dropout: float):
         super().__init__()
         self.self_attention_block = self_attention_block
         self.feed_forward_block = feed_forward_block

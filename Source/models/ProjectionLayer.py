@@ -5,7 +5,7 @@ current = os.path.dirname(os.path.realpath(__file__))
 path_git = str(Path(current).resolve().parents[1])
 sys.path.append(path_git)
 from Source.ConfigureInformation import *
-from Source.models.FeedFoward import *
+from Source.models.FeedForward import *
 from Source.models.InputEmbedding import *
 from Source.models.LayerNorm import *
 from Source.models.MultiHeadAttention import *
