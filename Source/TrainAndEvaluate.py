@@ -75,12 +75,12 @@ def get_ds(config):
     train_dataloader = DataLoader(train_ds,
                                 batch_size=config['batch_size'],
                                 num_workers=4,
-                                shuffle=False)
+                                shuffle=True)
     # print(train_ds[0])
     
     
     val_dataloader = DataLoader(val_ds,
-                                batch_size=config['batch_size'],
+                                batch_size=1,
                                 num_workers=4,
                                 shuffle=False)
     
@@ -102,13 +102,75 @@ def get_model(config, vocab_src_len, vocab_tgt_len):
 
     return model
 
+def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len):
+    sos_ids = tokenizer_tgt.token_to_id("[SOS]")
+    eos_ids = tokenizer_tgt.token_to_id("[EOS]")
+
+    # Precompute the encoder output and reuse it for every token we get from decoder
+    encoder_output = model.encode(source, source_mask) # (batch_size, seq_len, d_model)
+
+    # Initialise the decoder input with SOS token
+    decoder_input = torch.empty(1,1).fill_(sos_ids).type_as(source).to(device) # (batch_size, 1)
+    while True:
+        if decoder_input.shape[1] >= max_len:
+            break
+
+        # Build mask for the target
+        decoder_mask = casual_mask(decoder_input.shape[1]).type_as(source).to(device) # (batch_size, 1, seq_len, seq_len)
+
+        # Calculate output of the decoder
+        out = model.decode(encoder_output, source_mask, decoder_input, decoder_mask) # (batch_size, seq_len, d_model)
+
+        # Get the next token
+        prob = model.project(out[:, -1]) # (batch_size, vocab_size)
+        # greedy search (get maximum token)
+        _, next_token = torch.max(prob, dim=1) # (batch_size, 1)
+        decoder_input = torch.cat([decoder_input, torch.empty(1,1).type_as(source).fill_(next_token.item()).to(device)], dim=1) # (batch_size, seq_len)
+
+        if next_token == eos_ids:
+            break
+
+    return decoder_input.squeeze(0)
+
+def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, print_msg, global_state, writer, num_examples=2):
+    model.eval()
+    count = 0
+    # size of the control window (just use default value)
+    console_width = 80
+
+    with torch.no_grad():
+        # when inference, batch_size = 1
+        for batch in validation_ds:
+            count += 1
+            encoder_input = batch['encoder_input'].to(device)   # (batch_size, seq_len)
+            encoder_mask  = batch['encoder_mask'].to(device)    # (batch_size, 1, 1, seq_len)
+            
+            # check the batch size
+            assert encoder_input.shape[0] == 1, "Batch size must be 1 for validation"
+
+            model_output = greedy_decode(model, encoder_input, encoder_mask, tokenizer_src, tokenizer_tgt, max_len)
+            
+            source_text = batch['src_text'][0]
+            target_text = batch['tgt_text'][0]
+            predicted_text = tokenizer_tgt.decode(model_output.detach().cpu().numpy())
+
+            # print the result to the console
+            print_msg('-'*console_width)
+            print_msg(f'Source: {source_text}')
+            print_msg(f'Target: {target_text}')
+            print_msg(f'Predicted: {predicted_text}')
+
+            if count == num_examples:
+                break
+
+
+
 
 
 
 
 def train_model(config):
     # Define the device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('device: ', device)
 
     Path(config['model_folder']).mkdir(parents=True, exist_ok=True)
@@ -170,10 +232,24 @@ def train_model(config):
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
 
+
+
+
             global_step += 1
 
+        run_validation(model=model,
+                        validation_ds=val_dataloader,
+                        tokenizer_src=tokenizer_src,
+                        tokenizer_tgt=tokenizer_tgt,
+                        max_len=config['seq_len'],
+                        print_msg=lambda msg: batch_iterator.write(msg),
+                        global_state=global_step,
+                        writer=writer,
+                        num_examples=2)
+        
         # Save the model every epoch
         model_filename = get_weights_file_path(config, f'{epoch:02d}')
+        print(f"{model_filename}")
 
         state = {
             'epoch': epoch,

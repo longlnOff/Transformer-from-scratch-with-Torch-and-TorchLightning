@@ -26,20 +26,22 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 def get_config():
     return {
         'batch_size': 3,
         'num_epochs': 20,
-        'lr': 1e-4,
+        'lr': 4e-5,
         'seq_len': 350,
         'd_model': 512,
         'lang_src': 'en',
         'lang_tgt': 'it',
-        'model_folder': 'model_folder',
+        'model_folder': f"{path_git}/Checkpoints/model_folder", 
         'model_basename': 'tmodel_',
         'preload': None,
-        'tokenizer_file': 'tokenizer_{0}.json',
-        'experiment_name': 'runs/tmodel',
+        'tokenizer_file': path_git + '/' + 'Checkpoints' + '/tokenizer_{0}.json',
+        'experiment_name': f"{path_git}/Logs/runs/tmodel",
         'train_ds_size': 0.9,
         'd_ff': 2048,
         'num_head_attention': 8,
@@ -56,3 +58,5 @@ def get_weights_file_path(config, epoch):
     model_filename = f'{model_basename}{epoch}.pt'
 
     return str(Path('.') / model_folder / model_filename)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
