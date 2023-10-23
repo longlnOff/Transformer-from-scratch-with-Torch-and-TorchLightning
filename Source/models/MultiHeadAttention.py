@@ -48,10 +48,11 @@ class MultiHeadAttention(pl.LightningModule):
     def forward(self, q, k, v, mask=None):
         # q k v shape = [batch_size, seq_len, d_model]
         # linearly transform Q, K, V
-        Q = self.W_Q(q)
-        K = self.W_K(k)
-        V = self.W_V(v)
+        Q = self.W_Q(q.float())
+        K = self.W_K(k.float())
+        V = self.W_V(v.float())
         # Q K V shape = [batch_size, seq_len, d_model]
+
 
         # split Q, K, V into num_head
         Q = einops.rearrange(Q, 'b s (h d) -> b h s d', h=self.num_head, d=self.head_dim)
@@ -68,5 +69,7 @@ class MultiHeadAttention(pl.LightningModule):
         attention = self.W_O(attention)
         # attention shape = [batch_size, seq_len, d_model]
 
-        return attention, scores
+        # return attention, scores
+        return attention
+    
 

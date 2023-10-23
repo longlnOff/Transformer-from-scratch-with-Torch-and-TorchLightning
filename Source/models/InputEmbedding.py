@@ -18,4 +18,4 @@ class InputEmbedding(pl.LightningModule):
 
 
     def forward(self, x):
-        return self.embedding(x) * torch.math.sqrt(self.d_model, dtype=torch.float32)
+        return self.embedding(x) * math.sqrt(self.d_model)

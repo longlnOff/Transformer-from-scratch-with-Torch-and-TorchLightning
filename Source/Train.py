@@ -37,11 +37,11 @@ def get_ds(config):
     tokenizer_src = get_or_build_tokenizer(config, ds_raw, config['lang_src'])
     tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config['lang_tgt'])
 
-    # train test split
-    train_ds_size = int(len(ds_raw) * config['train_ds_size'])
+    # Keep 90% for training, 10% for validation
+    train_ds_size = int(config['train_ds_size'] * len(ds_raw))
     val_ds_size = len(ds_raw) - train_ds_size
-    train_ds_raw, val_ds_raw = ds_raw.train_test_split(
-        test_size=val_ds_size, shuffle=False)
+    train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
+
     
 
     train_ds = BilingualDataset(train_ds_raw,
@@ -72,14 +72,16 @@ def get_ds(config):
     print('max_len_tgt: ', max_len_tgt)
 
     train_dataloader = DataLoader(train_ds,
-                                    batch_size=config['batch_size'],
-                                    num_workers=4,
-                                    shuffle=True)
+                                batch_size=config['batch_size'],
+                                num_workers=4,
+                                shuffle=True)
+    # print(train_ds[0])
+    
     
     val_dataloader = DataLoader(val_ds,
-                                    batch_size=config['batch_size'],
-                                    num_workers=4,
-                                    shuffle=False)
+                                batch_size=config['batch_size'],
+                                num_workers=4,
+                                shuffle=False)
     
     return train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt
 
@@ -129,6 +131,9 @@ def train_model(config):
         global_step = state['global_step']
         optimizer.load_state_dict(state['optimizer_state_dict'])
 
+    # print model size
+    print(f'model size: {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:02.3f}M parameters')
+
 
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id("[PAD]"), label_smoothing=0.1).to(device)
 
@@ -142,9 +147,10 @@ def train_model(config):
             encoder_mask = batch['encoder_mask'].to(device)     # (batch_size, 1, 1, seq_len)
             decoder_mask = batch['decoder_mask'].to(device)     # (batch_size, 1, seq_len, seq_len)
 
+
             # Run the tensors through the transformer model
-            encoder_output = model.encoder(encoder_input, encoder_mask) # (batch_size, seq_len, d_model)
-            decoder_output = model.decoder(decoder_input, decoder_mask, encoder_output, encoder_mask)   # (batch_size, seq_len, d_model)
+            encoder_output = model.encode(encoder_input, encoder_mask) # (batch_size, seq_len, d_model)
+            decoder_output = model.decode(encoder_output, encoder_mask, decoder_input, decoder_mask)   # (batch_size, seq_len, d_model)
             project_output = model.project(decoder_output)   # (batch_size, seq_len, vocab_size)
 
             label = batch['label'].to(device)   # (batch_size, seq_len)
@@ -182,3 +188,24 @@ if __name__ == '__main__':
     config = get_config()
     train_model(config)
     print('Done!')
+
+
+    # train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
+    # ds_raw = load_dataset('opus_books', 
+    #                     f'{config["lang_src"]}-{config["lang_tgt"]}',
+    #                     split='train')
+    
+    # train_ds_size = int(config['train_ds_size'] * len(ds_raw))
+    # val_ds_size = len(ds_raw) - train_ds_size
+    # train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
+
+    
+
+    # train_ds = BilingualDataset(train_ds_raw,
+    #                             tokenizer_src,
+    #                             tokenizer_tgt,
+    #                             config['lang_src'],
+    #                             config['lang_tgt'],
+    #                             config['seq_len'],)
+    
+    # print(train_ds[0])

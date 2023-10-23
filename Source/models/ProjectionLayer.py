@@ -23,6 +23,6 @@ class ProjectionLayer(pl.LightningModule):
         # x shape = [batch_size, seq_len, d_model]
         x = self.linear(x)
         # x shape = [batch_size, seq_len, d_vocab]
-        x = self.softmax(x, dim=-1)
+        x = self.softmax(x)
         # x shape = [batch_size, seq_len, d_vocab]
         return x

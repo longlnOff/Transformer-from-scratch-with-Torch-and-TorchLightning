@@ -4,17 +4,17 @@ import os
 current = os.path.dirname(os.path.realpath(__file__))
 path_git = str(Path(current).resolve().parents[0])
 sys.path.append(path_git)
-print('###########################################3')
+print('###########################################')
 print('path git: ', path_git)
 
 
-
+import math
 import torch
 import pytorch_lightning as pl
 import numpy as np
 import pandas as pd
 import einops
-
+from torch.utils.data import Dataset, DataLoader, random_split
 
 from datasets import load_dataset
 from tokenizers import Tokenizer
@@ -28,9 +28,9 @@ from tqdm import tqdm
 
 def get_config():
     return {
-        'batch_size': 32,
+        'batch_size': 3,
         'num_epochs': 10,
-        'lr': 1e-4,
+        'lr': 1e-2,
         'seq_len': 359,
         'd_model': 512,
         'lang_src': 'en',

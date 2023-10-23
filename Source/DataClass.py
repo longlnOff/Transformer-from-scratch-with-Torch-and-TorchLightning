@@ -22,18 +22,19 @@ class BilingualDataset(pl.LightningDataModule):
         self.seq_len = seq_len
 
 
-        self.sos_token = torch.tensor(self.tokenizer_src.token_to_id("[SOS]"), dtype=torch.int64)
-        self.eos_token = torch.tensor(self.tokenizer_src.token_to_id("[EOS]"), dtype=torch.int64)
-        self.pad_token = torch.tensor(self.tokenizer_src.token_to_id("[PAD]"), dtype=torch.int64)
+        self.sos_token = torch.tensor(self.tokenizer_src.token_to_id("[SOS]"), dtype=torch.int64).unsqueeze(0)
+        self.eos_token = torch.tensor(self.tokenizer_src.token_to_id("[EOS]"), dtype=torch.int64).unsqueeze(0)
+        self.pad_token = torch.tensor(self.tokenizer_src.token_to_id("[PAD]"), dtype=torch.int64).unsqueeze(0)
 
     def __len__(self):
         return len(self.ds)
     
     def __getitem__(self, idx):
-        src_target_pair = self.ds[idx]
-        print(src_target_pair)
-        src_text = src_target_pair['translation'][self.src_lang]
-        tgt_text = src_target_pair['translation'][self.tgt_lang]
+        src_target_pair = self.ds[idx]['translation']
+        # print(src_target_pair)
+
+        src_text = src_target_pair[self.src_lang]
+        tgt_text = src_target_pair[self.tgt_lang]
 
         # text to ids
         enc_input_tokens = self.tokenizer_src.encode(src_text).ids
@@ -42,6 +43,7 @@ class BilingualDataset(pl.LightningDataModule):
         # calculate number tokens need to padded
         enc_num_padding_tokens = self.seq_len - len(enc_input_tokens) - 2 # -2 is SOS and EOS
         dec_num_padding_tokens = self.seq_len - len(dec_input_tokens) - 1 # -1 is SOS
+
 
         if enc_num_padding_tokens < 0 or dec_num_padding_tokens < 0:
             raise ValueError('sentence too long')
@@ -52,7 +54,7 @@ class BilingualDataset(pl.LightningDataModule):
                 self.sos_token,
                 torch.tensor(enc_input_tokens, dtype=torch.int64),
                 self.eos_token,
-                torch.tensor(self.pad_token * enc_num_padding_tokens, dtype=torch.int64)
+                torch.tensor([self.pad_token] * enc_num_padding_tokens, dtype=torch.int64)
             ]
 
         )
@@ -61,7 +63,7 @@ class BilingualDataset(pl.LightningDataModule):
             [
                 self.sos_token,
                 torch.tensor(dec_input_tokens, dtype=torch.int64),
-                torch.tensor(self.pad_token * dec_num_padding_tokens, dtype=torch.int64)
+                torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64)
             ]
         )
 
@@ -69,7 +71,7 @@ class BilingualDataset(pl.LightningDataModule):
             [
                 torch.tensor(dec_input_tokens, dtype=torch.int64),
                 self.eos_token,
-                torch.tensor(self.pad_token * dec_num_padding_tokens, dtype=torch.int64)
+                torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64)
             ]
         )
 
@@ -78,11 +80,13 @@ class BilingualDataset(pl.LightningDataModule):
         assert decoder_input.size(0) == self.seq_len
         assert label.size(0) == self.seq_len
 
+
+
         return {
             'encoder_input': encoder_input,     # shape = [seq_len]
             'decoder_input': decoder_input,     # shape = [seq_len]
-            'encoder_mask': einops.rearrange((encoder_input != self.pad_token).int(), 's -> 1 1 s'),        # shape = [1 1 seq_len]
-            'decoder_mask': einops.rearrange((dec_input_tokens != self.pad_token).int(), 's -> 1 1 s') & casual_mask(decoder_input.size(0)), # shape [1 1 seq_len] & [1 seq_len seq_len]
+            'encoder_mask': einops.rearrange((encoder_input != self.pad_token).long(), 's -> 1 1 s'),        # shape = [1 1 seq_len]
+            'decoder_mask': einops.rearrange((decoder_input != self.pad_token).long(), 's -> 1 1 s') & casual_mask(decoder_input.size(0)), # shape [1 1 seq_len] & [1 seq_len seq_len]
             'label': label,
             'src_text': src_text,
             'tgt_text': tgt_text
