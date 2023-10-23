@@ -31,7 +31,7 @@ def get_or_build_tokenizer(config, ds, lang):
 def get_ds(config):
     ds_raw = load_dataset('opus_books', 
                           f'{config["lang_src"]}-{config["lang_tgt"]}',
-                          split='train')
+                          split='train', cache_dir=path_git + '/' + 'DataFolder')
     
     # Build tokenizer
     tokenizer_src = get_or_build_tokenizer(config, ds_raw, config['lang_src'])
