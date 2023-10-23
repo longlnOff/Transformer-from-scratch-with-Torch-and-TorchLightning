@@ -38,6 +38,7 @@ def get_ds(config):
     tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config['lang_tgt'])
 
     # Keep 90% for training, 10% for validation
+    torch.manual_seed(0)
     train_ds_size = int(config['train_ds_size'] * len(ds_raw))
     val_ds_size = len(ds_raw) - train_ds_size
     train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
@@ -74,7 +75,7 @@ def get_ds(config):
     train_dataloader = DataLoader(train_ds,
                                 batch_size=config['batch_size'],
                                 num_workers=4,
-                                shuffle=True)
+                                shuffle=False)
     # print(train_ds[0])
     
     
@@ -154,6 +155,7 @@ def train_model(config):
             project_output = model.project(decoder_output)   # (batch_size, seq_len, vocab_size)
 
             label = batch['label'].to(device)   # (batch_size, seq_len)
+            
 
             # Calculate loss
             loss = loss_fn(project_output.view(-1, tokenizer_tgt.get_vocab_size()), label.view(-1))
@@ -164,9 +166,9 @@ def train_model(config):
             writer.flush()
 
             # Back propagation
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
 
             global_step += 1
 
@@ -187,25 +189,8 @@ if __name__ == '__main__':
 
     config = get_config()
     train_model(config)
-    print('Done!')
 
-
-    # train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
-    # ds_raw = load_dataset('opus_books', 
-    #                     f'{config["lang_src"]}-{config["lang_tgt"]}',
-    #                     split='train')
-    
-    # train_ds_size = int(config['train_ds_size'] * len(ds_raw))
-    # val_ds_size = len(ds_raw) - train_ds_size
-    # train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
-
-    
-
-    # train_ds = BilingualDataset(train_ds_raw,
-    #                             tokenizer_src,
-    #                             tokenizer_tgt,
-    #                             config['lang_src'],
-    #                             config['lang_tgt'],
-    #                             config['seq_len'],)
-    
-    # print(train_ds[0])
+    train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
+    for i in train_dataloader:
+        print(i['label'])
+        break

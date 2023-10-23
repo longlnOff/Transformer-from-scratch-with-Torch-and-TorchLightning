@@ -18,10 +18,10 @@ class MultiHeadAttention(pl.LightningModule):
         self.dropout = torch.nn.Dropout(dropout)
 
         # create weight matrices for Q, K, V and output
-        self.W_Q = torch.nn.Linear(d_model, d_model)
-        self.W_K = torch.nn.Linear(d_model, d_model)
-        self.W_V = torch.nn.Linear(d_model, d_model)
-        self.W_O = torch.nn.Linear(d_model, d_model)
+        self.W_Q = torch.nn.Linear(d_model, d_model, bias=False)
+        self.W_K = torch.nn.Linear(d_model, d_model, bias=False)
+        self.W_V = torch.nn.Linear(d_model, d_model, bias=False)
+        self.W_O = torch.nn.Linear(d_model, d_model, bias=False)
 
 
     @staticmethod
@@ -29,14 +29,14 @@ class MultiHeadAttention(pl.LightningModule):
         d_k = Q.shape[-1]
 
         # compute attention score
-        score = torch.matmul(Q, K.transpose(-2, -1)) / torch.math.sqrt(d_k)
+        score = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(d_k)
         # score shape = [batch_size, num_head, seq_len, seq_len]
         # apply mask
         if mask is not None:
             # replace value in score which that position is masked to -1e9
             score = score.masked_fill(mask == 0, -1e9)
         # apply softmax
-        score = torch.nn.functional.softmax(score, dim=-1)
+        score = score.softmax(dim=-1)
         # apply dropout
         score = dropout(score)
         # compute attention

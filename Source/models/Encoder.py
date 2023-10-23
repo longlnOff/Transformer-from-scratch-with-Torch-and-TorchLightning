@@ -49,5 +49,4 @@ class StackEncoder(pl.LightningModule):
         # x shape = [batch_size, seq_len, d_model]
         x = self.norm(x)
         # x shape = [batch_size, seq_len, d_model]
-
         return x

@@ -20,7 +20,7 @@ class PositionalEncoding(pl.LightningModule):
         # create position matrix
         position = torch.arange(0, self.seq_len, dtype=torch.float32).unsqueeze(1) # shape = [seq_len, 1]
         # we calculate positional in log scale for stability
-        div_term = torch.exp(torch.arange(0, self.d_model, 2).float() * (-torch.math.log(10000.0) / self.d_model)) # shape = [d_model/2]
+        div_term = torch.exp(torch.arange(0, self.d_model, 2).float() * (-math.log(10000.0) / self.d_model)) # shape = [d_model/2]
         # calculate positional encoding, apply sin to even index in the array; 2i and apply cos to odd index in the array; 2i+1
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
@@ -36,5 +36,6 @@ class PositionalEncoding(pl.LightningModule):
         # pe shape = [1, seq_len, d_model]
         # add positional encoding to each sequence in batch
         # below code will broadcast pe over batch dimension
-        x = x + self.pe[:, :x.size(1), :].requires_grad_(False)
+        x = x + self.pe[:, :x.shape[1], :].requires_grad_(False)
+
         return self.dropout(x)

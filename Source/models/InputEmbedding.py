@@ -18,4 +18,6 @@ class InputEmbedding(pl.LightningModule):
 
 
     def forward(self, x):
+        # print('vocab_size: ', self.vocab_size)
+        # print('x: ', self.embedding(x))
         return self.embedding(x) * math.sqrt(self.d_model)

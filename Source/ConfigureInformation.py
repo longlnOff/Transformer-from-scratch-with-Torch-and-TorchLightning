@@ -29,9 +29,9 @@ from tqdm import tqdm
 def get_config():
     return {
         'batch_size': 3,
-        'num_epochs': 10,
-        'lr': 1e-2,
-        'seq_len': 359,
+        'num_epochs': 20,
+        'lr': 1e-4,
+        'seq_len': 350,
         'd_model': 512,
         'lang_src': 'en',
         'lang_tgt': 'it',
@@ -42,7 +42,7 @@ def get_config():
         'experiment_name': 'runs/tmodel',
         'train_ds_size': 0.9,
         'd_ff': 2048,
-        'num_head_attention': 4,
+        'num_head_attention': 8,
         'num_encoder_blocks': 6,
         'num_decoder_blocks': 6,
         'dropout': 0.2,

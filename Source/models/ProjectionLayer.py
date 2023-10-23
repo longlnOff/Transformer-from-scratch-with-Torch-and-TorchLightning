@@ -17,12 +17,12 @@ class ProjectionLayer(pl.LightningModule):
     def __init__(self, d_model, d_vocab):
         super().__init__()
         self.linear = torch.nn.Linear(d_model, d_vocab)
-        self.softmax = torch.nn.Softmax(dim=-1)
+        # self.softmax = torch.nn.Softmax(dim=-1)
 
     def forward(self, x):
         # x shape = [batch_size, seq_len, d_model]
         x = self.linear(x)
         # x shape = [batch_size, seq_len, d_vocab]
-        x = self.softmax(x)
+        # x = self.softmax(x)
         # x shape = [batch_size, seq_len, d_vocab]
         return x
