@@ -186,17 +186,16 @@ def train_model(config):
 
     initial_epoch = 0
     global_step = 0
-    if config['preload'] is 'latest':
+    if config['preload'] == 'latest':
         model_filename = latest_weights_file_path(config)
         print('preload model {0}'.format(model_filename))
-        state = torch.load(model_filename)
-        initial_epoch = state['epoch'] + 1
-        global_step = state['global_step']
-        optimizer.load_state_dict(state['optimizer_state_dict'])
-        
     elif config['preload'] is not None:
         model_filename = get_weights_file_path(config, config['preload'])
         print('preload model {0}'.format(model_filename))
+    else:
+        model_filename = None
+
+    if model_filename is not None:
         state = torch.load(model_filename)
         initial_epoch = state['epoch'] + 1
         global_step = state['global_step']

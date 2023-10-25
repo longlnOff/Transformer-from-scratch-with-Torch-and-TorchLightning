@@ -70,6 +70,8 @@ class MultiHeadAttention(pl.LightningModule):
         attention = self.W_O(attention)
         # attention shape = [batch_size, seq_len, d_model]
 
+        self.attention_scores = scores
+
         # return attention, scores
         return attention
     
