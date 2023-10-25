@@ -186,13 +186,22 @@ def train_model(config):
 
     initial_epoch = 0
     global_step = 0
-    if config['preload'] is not None:
+    if config['preload'] is 'latest':
+        model_filename = latest_weights_file_path(config)
+        print('preload model {0}'.format(model_filename))
+        state = torch.load(model_filename)
+        initial_epoch = state['epoch'] + 1
+        global_step = state['global_step']
+        optimizer.load_state_dict(state['optimizer_state_dict'])
+        
+    elif config['preload'] is not None:
         model_filename = get_weights_file_path(config, config['preload'])
         print('preload model {0}'.format(model_filename))
         state = torch.load(model_filename)
-        initial_epoch = state['epoch']
+        initial_epoch = state['epoch'] + 1
         global_step = state['global_step']
         optimizer.load_state_dict(state['optimizer_state_dict'])
+
 
     # print model size
     print(f'model size: {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:02.3f}M parameters')
