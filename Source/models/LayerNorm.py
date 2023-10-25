@@ -9,11 +9,11 @@ from Source.ConfigureInformation import *
 
 
 class LayerNorm(pl.LightningModule):
-    def __init__(self, epsilon: float = 10e-6, dropout: float = 0.1):
+    def __init__(self, features: int = 512, epsilon: float = 10e-6, dropout: float = 0.1):
         super().__init__()
         self.epsilon = epsilon  # epsilon is a small value to avoid division by zero
-        self.gamma = torch.nn.Parameter(torch.ones(1))  # multiply by gamma
-        self.beta = torch.nn.Parameter(torch.zeros(1))  # add beta
+        self.gamma = torch.nn.Parameter(torch.ones(features))  # multiply by gamma
+        self.beta = torch.nn.Parameter(torch.zeros(features))  # add beta
         self.dropout = torch.nn.Dropout(dropout)
 
     def forward(self, x):

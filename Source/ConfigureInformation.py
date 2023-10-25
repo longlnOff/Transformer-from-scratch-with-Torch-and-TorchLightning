@@ -30,9 +30,9 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 def get_config():
     return {
-        'batch_size': 3,
+        'batch_size': 4,
         'num_epochs': 20,
-        'lr': 4e-5,
+        'lr': 1e-4,
         'seq_len': 350,
         'd_model': 512,
         'lang_src': 'en',

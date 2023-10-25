@@ -73,6 +73,7 @@ def build_model(src_vocab_size: int,
     
     src_embedding = InputEmbedding(vocab_size=src_vocab_size, d_model=d_model)
     tar_embedding = InputEmbedding(vocab_size=tar_vocab_size, d_model=d_model)
+    
     src_position = PositionalEncoding(d_model, dropout, src_seq_len)
     tar_position = PositionalEncoding(d_model, dropout, tar_seq_len)
     

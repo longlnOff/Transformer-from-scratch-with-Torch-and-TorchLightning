@@ -18,9 +18,9 @@ class ResidualConnection(pl.LightningModule):
         # sublayer is either MultiHeadAttention or FeedForward
         # sublayer(x) shape = [batch_size, seq_len, d_model]
         # apply dropout
-        x = self.dropout(sublayer(x))
+        y = self.dropout(sublayer(self.norm(x)))
         # add residual connection
-        x = x + self.norm(x)
+        x = x + y
         # x shape = [batch_size, seq_len, d_model]
 
         return x

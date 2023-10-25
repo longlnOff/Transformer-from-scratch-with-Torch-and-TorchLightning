@@ -22,7 +22,9 @@ class PositionalEncoding(pl.LightningModule):
         # we calculate positional in log scale for stability
         div_term = torch.exp(torch.arange(0, self.d_model, 2).float() * (-math.log(10000.0) / self.d_model)) # shape = [d_model/2]
         # calculate positional encoding, apply sin to even index in the array; 2i and apply cos to odd index in the array; 2i+1
+        # apply sine to even indices in the array; 2i
         pe[:, 0::2] = torch.sin(position * div_term)
+        # apply cosine to odd indices in the array; 2i+1
         pe[:, 1::2] = torch.cos(position * div_term)
 
         # add batch dimension

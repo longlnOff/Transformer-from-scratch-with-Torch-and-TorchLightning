@@ -11,7 +11,7 @@ from Source.ConfigureInformation import *
 class MultiHeadAttention(pl.LightningModule):
     def __init__(self, d_model: int, num_head: int, dropout: float):
         super().__init__()
-        assert d_model % num_head == 0
+        assert d_model % num_head == 0, "d_model must be divisible by num_head"
         self.d_model = d_model
         self.num_head = num_head
         self.head_dim = d_model // num_head
@@ -22,6 +22,7 @@ class MultiHeadAttention(pl.LightningModule):
         self.W_K = torch.nn.Linear(d_model, d_model, bias=False)
         self.W_V = torch.nn.Linear(d_model, d_model, bias=False)
         self.W_O = torch.nn.Linear(d_model, d_model, bias=False)
+
 
 
     @staticmethod
