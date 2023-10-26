@@ -200,6 +200,7 @@ def train_model(config):
         initial_epoch = state['epoch'] + 1
         global_step = state['global_step']
         optimizer.load_state_dict(state['optimizer_state_dict'])
+        model.load_state_dict(state['model_state_dict'])
 
 
     # print model size
