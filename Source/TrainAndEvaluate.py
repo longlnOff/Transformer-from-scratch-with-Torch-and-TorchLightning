@@ -273,9 +273,13 @@ def train_model(config):
 if __name__ == '__main__':
 
     config = get_config()
-    train_model(config)
+    # train_model(config)
 
     train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
     for i in train_dataloader:
         print(i['label'])
         break
+
+
+    print(tokenizer_src.get_vocab_size())
+    print(tokenizer_tgt.get_vocab_size())
