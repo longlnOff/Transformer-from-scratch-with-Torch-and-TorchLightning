@@ -111,6 +111,11 @@ class Transformer(pl.LightningModule):
         loss, projection_output, label = self._common_step(batch, batch_idx)
         self.log("loss", loss, prog_bar=True)
         return {'loss': loss}
+    
+    def validation_step(self, batch, batch_idx):
+        loss, projection_output, label = self._common_step(batch, batch_idx)
+        self.log("loss", loss, prog_bar=True)
+        return {'loss': loss}
 
     
 
