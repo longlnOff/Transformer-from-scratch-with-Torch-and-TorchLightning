@@ -18,9 +18,9 @@ class LayerNorm(pl.LightningModule):
 
     def forward(self, x):
         # x shape = [batch_size, seq_len, d_model]
-        mean = torch.mean(input=x, dim=-1, keepdim=True)
-        std  = torch.std(input=x, dim=-1, keepdim=True)
-        x    = (x - mean) / torch.math.sqrt(std + self.epsilon) 
+        mean = x.mean(dim=-1, keepdim=True)
+        std  = x.std(dim=-1, keepdim=True) 
+        x    = (x - mean) / torch.sqrt(std + self.epsilon) 
         x    = self.dropout(x*self.gammar + self.beta)
         return x
     

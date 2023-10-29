@@ -1,6 +1,9 @@
 from pathlib import Path
 import sys
 import os
+from typing import Any
+
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 current = os.path.dirname(os.path.realpath(__file__))
 path_git = str(Path(current).resolve().parents[1])
 sys.path.append(path_git)
@@ -10,7 +13,8 @@ from TorchLightning.models.EncoderBlock import *
 from TorchLightning.models.InputEmbedding import *
 from TorchLightning.models.PositionalEncoding import *
 from TorchLightning.models.ProjectLayer import *
-
+from TorchLightning.DataModule import *
+from pytorch_lightning.callbacks import EarlyStopping, Callback
 
 
 class Transformer(pl.LightningModule):
@@ -50,6 +54,9 @@ class Transformer(pl.LightningModule):
         self.layernorm_encoder = LayerNorm(feature_size=d_model, dropout=dropout, epsilon=epsilon)
         self.layernorm_decoder = LayerNorm(feature_size=d_model, dropout=dropout, epsilon=epsilon)
 
+
+        self.loss_fn = torch.nn.CrossEntropyLoss(ignore_index=1, label_smoothing=0.1)
+        
     def encode(self, src, src_mask):
         # src shape = [batch_size, seq_len]
         src = self.input_embedding_src(src)
@@ -69,7 +76,6 @@ class Transformer(pl.LightningModule):
         # tar shape = [batch_size, seq_len, d_model]
         tar = self.input_position_tar(tar)
         # tar shape = [batch_size, seq_len, d_model]
-
         for layer in self.decoder:
             tar = layer(tar, encoder_output, src_mask, tar_mask)
         tar = self.layernorm_decoder(tar)
@@ -86,6 +92,30 @@ class Transformer(pl.LightningModule):
         projection_output = self.project(decoder_output)
 
         return projection_output
+    
+    # We can use _common_step() to reduce code duplication
+    def _common_step(self, batch, batch_idx):
+        encoder_input = batch['encoder_input']
+        decoder_input = batch['decoder_input']
+        encoder_mask = batch['encoder_mask']
+        decoder_mask = batch['decoder_mask']
+        label = batch['label']
+        src_text = batch['src_text']
+        tgt_text = batch['tgt_text']
+
+        projection_output = self.forward(encoder_input, encoder_mask, decoder_input, decoder_mask)
+        loss = self.loss_fn(projection_output.view(-1, 22463), label.view(-1))
+        return loss, projection_output, label
+    
+    def training_step(self, batch, batch_idx):
+        loss, projection_output, label = self._common_step(batch, batch_idx)
+        self.log("loss", loss, prog_bar=True)
+        return {'loss': loss}
+
+    
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=1e-4)
     
 
 def build_model( vocab_size_src: int, 
@@ -123,13 +153,36 @@ if __name__ == "__main__":
     model = build_model(vocab_size_src=15698,
                         seq_len_src=350,
                         vocab_size_tar=22463,
-                        seq_len_tar=274,
-                        d_model=512,
-                        d_ff=2048,
+                        seq_len_tar=350,
+                        d_model=256,
+                        d_ff=1024,
                         n_head=8,
                         epsilon=1e-6,
                         dropout=0.1,
-                        num_encoder=6,
-                        num_decoder=6)
+                        num_encoder=3,
+                        num_decoder=3)
     
     print(f'model size: {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:02.3f}M parameters')
+
+
+    data_module = DataModule(config=get_config())
+
+
+    # Compute related
+    ACCERLATOR = "gpu"
+    DEVICES = [0]
+    PRECISION = "16-mixed"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    trainer = pl.Trainer(
+
+        min_epochs=1,
+        max_epochs=10,
+        accelerator=ACCERLATOR,
+        devices=DEVICES,
+        precision=PRECISION,
+        callbacks=EarlyStopping(monitor='train_loss')
+    )
+
+
+    trainer.fit(model, datamodule=data_module)

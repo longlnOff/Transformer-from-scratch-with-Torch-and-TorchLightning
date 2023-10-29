@@ -46,11 +46,10 @@ class DecoderBlock(pl.LightningModule):
                                         dropout=dropout)
         
     def forward(self, x, input_from_encoder, src_mask, tar_mask):
-        
-        y = self.mha1(q=x, k=x, v=x, mask=tar_mask)
-        x = self.add_and_norm1(x=x, transformed_input=y)
 
-        y = self.mha2(q=x, k=input_from_encoder, v=input_from_encoder, mask=src_mask)
+        y, scores = self.mha1(q=x, k=x, v=x, mask=tar_mask)
+        x = self.add_and_norm1(x=x, transformed_input=y)
+        y, scores = self.mha2(q=x, k=input_from_encoder, v=input_from_encoder, mask=src_mask)
         x = self.add_and_norm2(x=x, transformed_input=y)
 
         y = self.feed_forward(x)

@@ -25,7 +25,7 @@ class MultiHeadAttention(pl.LightningModule):
 
 
     @staticmethod
-    def attention_calculate(self, q, k, v, mask, dropout: torch.nn.Dropout):
+    def attention_calculate(q, k, v, mask, dropout: torch.nn.Dropout):
         # shape q, k, v = [B, s, d_k]
         # mask shape = [B, s]
         d_k = q.shape[-1]

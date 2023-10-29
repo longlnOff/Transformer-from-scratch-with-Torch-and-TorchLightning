@@ -41,7 +41,7 @@ class EncoderBlock(pl.LightningModule):
 
     def forward(self, x, mask):
         # mha is combined with add&norm
-        out_layer = self.mha(q=x, k=x, v=x, mask=mask)
+        out_layer, scores = self.mha(q=x, k=x, v=x, mask=mask)
         x = self.add_and_norm1(x=x, transformed_input=out_layer)
 
         # ffw is combined with add&norm
