@@ -40,15 +40,18 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     trainer = pl.Trainer(
-
+        default_root_dir=config['model_folder'],
         min_epochs=1,
-        max_epochs=10,
+        max_epochs=1,
         accelerator=ACCERLATOR,
         devices=DEVICES,
         precision=PRECISION,
-        callbacks=EarlyStopping(monitor='train_loss')
+        callbacks=EarlyStopping(monitor='val_loss')
     )
-
-
-    # trainer.fit(model, datamodule=data_module)
-    trainer.validate(model, datamodule=data_module)
+    data_module.setup()
+    trainer.fit(model=model,
+                train_dataloaders=data_module.train_dataloader(),
+                val_dataloaders=data_module.val_dataloader())
+    
+    trainer.validate(model=model,
+                     dataloaders=data_module.val_dataloader())

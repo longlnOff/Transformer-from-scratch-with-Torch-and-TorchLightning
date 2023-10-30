@@ -54,6 +54,7 @@ class DataModule(pl.LightningDataModule):
         train_ds_size = int(self.config['train_ds_size'] * len(ds_raw))
         val_ds_size = len(ds_raw) - train_ds_size
         train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
+        train_ds_raw = val_ds_raw
 
         self.train_ds = BilingualDataset(train_ds_raw,
                             tokenizer_src,
