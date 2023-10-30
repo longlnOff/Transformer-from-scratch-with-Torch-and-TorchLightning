@@ -14,7 +14,6 @@ from TorchLightning.models.InputEmbedding import *
 from TorchLightning.models.PositionalEncoding import *
 from TorchLightning.models.ProjectLayer import *
 from TorchLightning.DataModule import *
-from pytorch_lightning.callbacks import EarlyStopping, Callback
 
 
 class Transformer(pl.LightningModule):
@@ -32,6 +31,9 @@ class Transformer(pl.LightningModule):
                  num_decoder: int,
                  ):
         super().__init__()
+        self.vocab_size_src = vocab_size_src
+        self.seq_len_src = seq_len_src
+        self.vocab_size_tar = vocab_size_tar
 
         # init src embedding
         self.input_embedding_src = InputEmbedding(vocab_size=vocab_size_src, d_model=d_model)
@@ -56,6 +58,8 @@ class Transformer(pl.LightningModule):
 
 
         self.loss_fn = torch.nn.CrossEntropyLoss(ignore_index=1, label_smoothing=0.1)
+
+        self.loss_val = []
         
     def encode(self, src, src_mask):
         # src shape = [batch_size, seq_len]
@@ -104,18 +108,18 @@ class Transformer(pl.LightningModule):
         tgt_text = batch['tgt_text']
 
         projection_output = self.forward(encoder_input, encoder_mask, decoder_input, decoder_mask)
-        loss = self.loss_fn(projection_output.view(-1, 22463), label.view(-1))
+        loss = self.loss_fn(projection_output.view(-1, self.vocab_size_tar), label.view(-1))
         return loss, projection_output, label
     
     def training_step(self, batch, batch_idx):
         loss, projection_output, label = self._common_step(batch, batch_idx)
-        self.log("loss", loss, prog_bar=True)
-        return {'loss': loss}
+        self.log("loss_train", loss, prog_bar=True, logger=False,)
+        return {'loss_train': loss}
     
     def validation_step(self, batch, batch_idx):
         loss, projection_output, label = self._common_step(batch, batch_idx)
-        self.log("loss", loss, prog_bar=True)
-        return {'loss': loss}
+        self.log("loss_validation", loss, prog_bar=True, logger=False,)
+        return {'loss_validation': loss}
 
     
 
@@ -124,16 +128,19 @@ class Transformer(pl.LightningModule):
     
 
 def build_model( vocab_size_src: int, 
-                 seq_len_src: int, 
                  vocab_size_tar: int, 
-                 seq_len_tar: int, 
-                 d_model: int,
-                 d_ff: int, 
-                 n_head: int,
-                 epsilon: float, 
-                 dropout: float,
-                 num_encoder: int,
-                 num_decoder: int,):
+                 config: dict = None):
+    seq_len_src = config['seq_len']
+    seq_len_tar = config['seq_len']
+    d_model = config['d_model']
+    d_ff = config['d_ff']
+    n_head = config['num_head_attention']
+    epsilon = config['epsilon']
+    dropout = config['dropout']
+    num_encoder = config['num_encoder_blocks']
+    num_decoder = config['num_decoder_blocks']
+
+
     
     model = Transformer(vocab_size_src=vocab_size_src,
                         seq_len_src=seq_len_src,
@@ -147,6 +154,8 @@ def build_model( vocab_size_src: int,
                         num_encoder=num_encoder,
                         num_decoder=num_decoder)
     
+    print(f'model size: {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:02.3f}M parameters')
+    
     # init weights
     for p in model.parameters():
         if p.dim() > 1:
@@ -154,40 +163,3 @@ def build_model( vocab_size_src: int,
     
     return model
 
-if __name__ == "__main__":
-    model = build_model(vocab_size_src=15698,
-                        seq_len_src=350,
-                        vocab_size_tar=22463,
-                        seq_len_tar=350,
-                        d_model=256,
-                        d_ff=1024,
-                        n_head=8,
-                        epsilon=1e-6,
-                        dropout=0.1,
-                        num_encoder=3,
-                        num_decoder=3)
-    
-    print(f'model size: {sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6:02.3f}M parameters')
-
-
-    data_module = DataModule(config=get_config())
-
-
-    # Compute related
-    ACCERLATOR = "gpu"
-    DEVICES = [0]
-    PRECISION = "16-mixed"
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    trainer = pl.Trainer(
-
-        min_epochs=1,
-        max_epochs=10,
-        accelerator=ACCERLATOR,
-        devices=DEVICES,
-        precision=PRECISION,
-        callbacks=EarlyStopping(monitor='train_loss')
-    )
-
-
-    trainer.fit(model, datamodule=data_module)

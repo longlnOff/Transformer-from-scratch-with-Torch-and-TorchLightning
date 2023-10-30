@@ -22,6 +22,7 @@ from tokenizers.pre_tokenizers import Whitespace
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+from pytorch_lightning.callbacks import EarlyStopping, Callback
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -29,7 +30,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 def get_config():
     return {
-        'batch_size': 1,
+        'batch_size': 3,
         'num_epochs': 20,
         'lr': 1e-4,
         'seq_len': 350,
@@ -47,5 +48,6 @@ def get_config():
         'num_encoder_blocks': 6,
         'num_decoder_blocks': 6,
         'dropout': 0.2,
+        'epsilon': 1e-6,
 
     }
